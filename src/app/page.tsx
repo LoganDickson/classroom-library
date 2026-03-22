@@ -6,6 +6,7 @@ import AddBookButton from "@/components/AddBookButton";
 
 export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [search, setSearch] = useState("");
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -21,7 +22,17 @@ export default function Home() {
           </div>
           <AddBookButton onBookAdded={() => setRefreshKey((k) => k + 1)} />
         </div>
-        <BookList refreshKey={refreshKey} />
+
+        {/* Search Bar */}
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title or author..."
+          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-6 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <BookList refreshKey={refreshKey} search={search} />
       </div>
     </main>
   );
