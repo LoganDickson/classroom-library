@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { searchBook, BookResult } from "@/lib/googleBooks";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import Image from "next/image";
 import BarcodeScanner from "@/components/BarcodeScanner";
 
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function AddBookModal({ onClose, onBookAdded }: Props) {
+  const supabase = createClient();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<BookResult | null>(null);
   const [status, setStatus] = useState<
@@ -32,11 +33,14 @@ export default function AddBookModal({ onClose, onBookAdded }: Props) {
     }
 
     // Check for duplicate
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { data } = await supabase
-      .from("books")
-      .select("id")
-      .eq("isbn", book.isbn)
-      .single();
+    .from("books")
+    .select("id")
+    .eq("isbn", book.isbn)
+    .eq("user_id", user?.id)
+    .single();
 
     if (data) {
       setResult(book);
@@ -52,7 +56,16 @@ export default function AddBookModal({ onClose, onBookAdded }: Props) {
     if (!result) return;
     setStatus("saving");
 
-    const { error } = await supabase.from("books").insert([result]);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setStatus("error");
+      return;
+    }
+
+    const { error } = await supabase.from("books").insert([
+      { ...result, user_id: user.id },
+    ]);
 
     if (error) {
       setStatus("error");
@@ -64,9 +77,9 @@ export default function AddBookModal({ onClose, onBookAdded }: Props) {
   }
 
   function handleScan(isbn: string) {
-    setShowScanner(false);
-    setQuery(isbn);
-    handleSearch(isbn);
+  setShowScanner(false);
+  setQuery(isbn);
+  handleSearch(isbn);
   }
 
   return (

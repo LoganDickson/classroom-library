@@ -1,12 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import BookList from "@/components/BookList";
 import AddBookButton from "@/components/AddBookButton";
+import { createClient } from "@/lib/supabase";
 
 export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
+  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) setEmail(user.email);
+    }
+    getUser();
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -20,7 +39,18 @@ export default function Home() {
               Keep track of all your classroom books
             </p>
           </div>
-          <AddBookButton onBookAdded={() => setRefreshKey((k) => k + 1)} />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500 hidden sm:block">
+              {email}
+            </span>
+            <AddBookButton onBookAdded={() => setRefreshKey((k) => k + 1)} />
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import Image from "next/image";
 
 type Book = {
@@ -19,6 +19,7 @@ type Props = {
 };
 
 export default function BookList({ refreshKey, search }: Props) {
+  const supabase = createClient();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -26,9 +27,17 @@ export default function BookList({ refreshKey, search }: Props) {
   useEffect(() => {
     async function fetchBooks() {
       setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
       const { data } = await supabase
         .from("books")
         .select("*")
+        .eq("user_id", user.id)
         .order("title", { ascending: true });
 
       setBooks(data ?? []);
